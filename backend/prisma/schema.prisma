@@ -1,0 +1,235 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  login        String   @unique
+  name         String?
+  email        String   @unique
+  passwordHash String?  @map("password_hash")
+  yandexId     String?  @unique @map("yandex_id")
+  avatarUrl    String?  @map("avatar_url")
+  description  String?
+  balance      Decimal  @default(0)
+  roleId       Int      @map("role_id")
+  statusId     Int      @map("status_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  role   Role   @relation(fields: [roleId], references: [id])
+  status Status @relation(fields: [statusId], references: [id])
+
+  products      Product[]  @relation("SellerProducts")
+  favorites     Favorite[]
+  buyerOrders   Order[]    @relation("BuyerOrders")
+  sellerOrders  Order[]    @relation("SellerOrders")
+  buyerChats    Chat[]     @relation("BuyerChats")
+  sellerChats   Chat[]     @relation("SellerChats")
+  messages      Message[]
+  reviews       Review[]
+  reportsTarget Report[]   @relation("TargetUser")
+  reportsSent   Report[]   @relation("Reporter")
+
+  @@map("users")
+}
+
+model Role {
+  id    Int    @id @default(autoincrement())
+  name  String
+  users User[]
+
+  @@map("roles")
+}
+
+model Status {
+  id    Int    @id @default(autoincrement())
+  name  String
+  users User[]
+
+  @@map("statuses")
+}
+
+model Category {
+  id            Int           @id @default(autoincrement())
+  name          String
+  slug          String        @unique
+  iconUrl       String?       @map("icon_url")
+  description   String?
+  type          String?
+  subcategories Subcategory[]
+  products      Product[]
+
+  @@map("categories")
+}
+
+model Subcategory {
+  id            Int     @id @default(autoincrement())
+  categoryId    Int     @map("category_id")
+  groupName     String? @map("group_name")
+  name          String
+  logoUrl       String? @map("logo_url")
+  isRecommended Boolean @default(false) @map("is_recommended")
+
+  category Category  @relation(fields: [categoryId], references: [id])
+  products Product[]
+
+  @@map("subcategories")
+}
+
+model Product {
+  id            Int      @id @default(autoincrement())
+  sellerId      Int      @map("seller_id")
+  categoryId    Int      @map("category_id")
+  subcategoryId Int      @map("subcategory_id")
+  name          String
+  price         Decimal
+  description   String?
+  infoForBuyer  String?  @map("info_for_buyer")
+  isService     Boolean  @default(false) @map("is_service")
+  status        String
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  seller      User        @relation("SellerProducts", fields: [sellerId], references: [id])
+  category    Category    @relation(fields: [categoryId], references: [id])
+  subcategory Subcategory @relation(fields: [subcategoryId], references: [id])
+
+  images    ProductImage[]
+  tags      ProductTag[]
+  favorites Favorite[]
+  orders    Order[]
+  chats     Chat[]
+  reviews   Review[]
+
+  @@map("products")
+}
+
+model ProductImage {
+  id        Int     @id @default(autoincrement())
+  productId Int     @map("product_id")
+  imageUrl  String  @map("image_url")
+  isPreview Boolean @map("is_preview")
+
+  product Product @relation(fields: [productId], references: [id])
+
+  @@map("product_images")
+}
+
+model ProductTag {
+  id        Int    @id @default(autoincrement())
+  productId Int    @map("product_id")
+  tagName   String @map("tag_name")
+
+  product Product @relation(fields: [productId], references: [id])
+
+  @@map("product_tags")
+}
+
+model Favorite {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  productId Int      @map("product_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user    User    @relation(fields: [userId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
+
+  @@map("favorites")
+}
+
+model Order {
+  id        Int      @id @default(autoincrement())
+  productId Int      @map("product_id")
+  buyerId   Int      @map("buyer_id")
+  sellerId  Int      @map("seller_id")
+  chatId    Int?     @map("chat_id")
+  status    String
+  amount    Decimal
+  createdAt DateTime @default(now()) @map("created_at")
+
+  product Product  @relation(fields: [productId], references: [id])
+  buyer   User     @relation("BuyerOrders", fields: [buyerId], references: [id])
+  seller  User     @relation("SellerOrders", fields: [sellerId], references: [id])
+  chat    Chat?    @relation(fields: [chatId], references: [id])
+  reviews Review[]
+
+  @@map("orders")
+}
+
+model Chat {
+  id        Int @id @default(autoincrement())
+  buyerId   Int @map("buyer_id")
+  sellerId  Int @map("seller_id")
+  productId Int @map("product_id")
+
+  buyer    User      @relation("BuyerChats", fields: [buyerId], references: [id])
+  seller   User      @relation("SellerChats", fields: [sellerId], references: [id])
+  product  Product   @relation(fields: [productId], references: [id])
+  messages Message[]
+  orders   Order[]
+
+  @@map("chats")
+}
+
+model Message {
+  id        Int      @id @default(autoincrement())
+  chatId    Int      @map("chat_id")
+  senderId  Int      @map("sender_id")
+  text      String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  chat   Chat @relation(fields: [chatId], references: [id])
+  sender User @relation(fields: [senderId], references: [id])
+
+  @@map("messages")
+}
+
+model Banner {
+  id          Int     @id @default(autoincrement())
+  title       String?
+  description String?
+  imageUrl    String  @map("image_url")
+  linkUrl     String? @map("link_url")
+  sortOrder   Int     @default(0) @map("sort_order")
+
+  @@map("banners")
+}
+
+model Review {
+  id        Int      @id @default(autoincrement())
+  productId Int      @map("product_id")
+  authorId  Int      @map("author_id")
+  orderId   Int      @map("order_id")
+  text      String?
+  rating    Int
+  createdAt DateTime @default(now()) @map("created_at")
+
+  product Product @relation(fields: [productId], references: [id])
+  author  User    @relation(fields: [authorId], references: [id])
+  order   Order   @relation(fields: [orderId], references: [id])
+
+  @@map("reviews")
+}
+
+model Report {
+  id           Int     @id @default(autoincrement())
+  targetUserId Int     @map("target_user_id")
+  reporterId   Int     @map("reporter_id")
+  reason       String
+  details      String?
+  status       String
+
+  targetUser User @relation("TargetUser", fields: [targetUserId], references: [id])
+  reporter   User @relation("Reporter", fields: [reporterId], references: [id])
+
+  @@map("reports")
+}

@@ -43,4 +43,19 @@ export class UsersService {
       },
     });
   }
+
+  async findByYandexOrEmail(yandexId: string, email: string) {
+    return this.prisma.user.findFirst({
+      where: {
+        OR: [{ yandexId }, { email }],
+      },
+    });
+  }
+
+  async updateYandexId(id: number, yandexId: string, avatarUrl?: string) {
+    return this.prisma.user.update({
+      where: { id },
+      data: { yandexId, avatarUrl },
+    });
+  }
 }

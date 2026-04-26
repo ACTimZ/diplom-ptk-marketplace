@@ -59,10 +59,44 @@ export class AuthService {
     return this.generateToken(user.id, user.email);
   }
 
-  private generateToken(userId: number, email: string) {
+  public generateToken(userId: number, email: string) {
     const payload = { sub: userId, email };
     return {
       access_token: this.jwtService.sign(payload),
     };
+  }
+
+  // src/auth/auth.service.ts
+
+  async validateYandexUser(details: any) {
+    // 1. Ищем, есть ли такой человек
+    let user = await this.usersService.findByYandexOrEmail(
+      details.yandexId,
+      details.email,
+    );
+
+    if (user) {
+      // 2. Если пользователь есть, но зашел через Яндекс впервые — привязываем ID
+      if (!user.yandexId) {
+        user = await this.usersService.updateYandexId(
+          user.id,
+          details.yandexId,
+          details.avatarUrl,
+        );
+      }
+      return user;
+    }
+
+    // 3. Если пользователя нет — создаем (авторегистрация)
+    // Для пароля при OAuth-регистрации оставляем null (в схеме passwordHash String? — это позволяет)
+    return this.usersService.create({
+      email: details.email,
+      login: `user_${details.yandexId}`, // Генерируем уникальный логин
+      name: details.name,
+      yandexId: details.yandexId,
+      avatarUrl: details.avatarUrl,
+      role: { connect: { id: 1 } },
+      status: { connect: { id: 1 } },
+    });
   }
 }

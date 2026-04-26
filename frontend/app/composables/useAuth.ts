@@ -35,11 +35,35 @@ export const useAuth = () => {
     navigateTo("/login");
   };
 
+  const fetchUser = async (manualToken = null) => {
+    const config = useRuntimeConfig();
+    const token = useCookie("auth_token");
+    const user = useState("auth_user");
+
+    // Берем либо переданный токен, либо из куки
+    const activeToken = manualToken || token.value;
+
+    if (activeToken) {
+      try {
+        const data = await $fetch(`${config.public.apiBase}/users/me`, {
+          headers: {
+            Authorization: `Bearer ${activeToken}`,
+          },
+        });
+        user.value = data;
+      } catch (e) {
+        console.error("Profile load error:", e);
+        user.value = null;
+      }
+    }
+  };
+
   return {
     user,
     token,
-    login,
-    register,
+    // login,
+    // register,
+    fetchUser,
     logout,
     isLoggedIn: computed(() => !!token.value),
   };

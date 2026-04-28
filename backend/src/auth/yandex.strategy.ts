@@ -21,13 +21,12 @@ export class YandexStrategy extends PassportStrategy(Strategy, 'yandex') {
   }
 
   async validate(
-    req: any, // Теперь 'req' ОБЯЗАТЕЛЬНО первый, если passReqToCallback: true
+    req: any,
     accessToken: string,
     refreshToken: string,
     profile: any,
     done: any,
   ) {
-    // Проверяем, пришел ли профиль, чтобы избежать TypeError
     if (!profile || !profile._json) {
       return done(
         new Error('Не удалось получить данные профиля от Яндекс'),
@@ -37,7 +36,6 @@ export class YandexStrategy extends PassportStrategy(Strategy, 'yandex') {
 
     const { id, emails, photos, _json } = profile;
 
-    // Безопасное извлечение имени
     const fullName =
       _json.real_name ||
       (_json.first_name || _json.last_name
@@ -49,11 +47,9 @@ export class YandexStrategy extends PassportStrategy(Strategy, 'yandex') {
       yandexId: id,
       email: emails && emails[0] ? emails[0].value : _json.default_email,
       name: fullName,
-      // Выбираем аватарку получше (islands-retina-medium — это 100x100 или больше)
       avatarUrl: photos && photos[0] ? photos[0].value : null,
     };
 
-    // Передаем собранный объект дальше в контроллер
     done(null, yandexUser);
   }
 }

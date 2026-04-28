@@ -28,7 +28,6 @@ export class UsersController {
   @UseGuards(AuthGuard('jwt'))
   @Get('me')
   async getProfile(@Req() req) {
-    // req.user попадает сюда из JwtStrategy (validate)
     return this.usersService.findById(req.user.userId);
   }
 
@@ -38,7 +37,6 @@ export class UsersController {
     @Req() req,
     @Body() data: { description?: string; login?: string; password?: string },
   ) {
-    // Если передается пароль, его нужно захешировать (импортируй bcrypt)
     const updateData: any = { ...data };
     if (data.password) {
       const bcrypt = require('bcrypt');

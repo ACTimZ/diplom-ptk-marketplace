@@ -23,14 +23,12 @@ export class AuthController {
   @Get('yandex')
   @UseGuards(AuthGuard('yandex'))
   async yandexAuth() {
-    // Здесь ничего не пишем, Nest сам перенаправит пользователя на Яндекс
+    //
   }
 
   @Get('yandex-auth')
   @UseGuards(AuthGuard('yandex'))
   async yandexAuthCallback(@Req() req, @Res() res: Response) {
-    // 1. Пытаемся понять, был ли пользователь авторизован ДО клика по кнопке
-    // Мы можем передать JWT через куки, которые Nest увидит в req.cookies
     const cookies = req.headers.cookie?.split('; ').reduce((acc, v) => {
       const [name, value] = v.split('=');
       acc[name] = value;
@@ -42,14 +40,12 @@ export class AuthController {
 
     if (token) {
       try {
-        // Расшифровываем токен вручную, чтобы достать userId
         currentUser = this.authService.verifyToken(token);
       } catch (e) {
         currentUser = null;
       }
     }
 
-    // 2. Вызываем валидацию, передавая текущего юзера для "склейки"
     const user = await this.authService.validateYandexUser(
       req.user,
       currentUser,

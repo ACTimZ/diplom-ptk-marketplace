@@ -31,18 +31,13 @@ onMounted(async () => {
         const token = useCookie("auth_token");
         const authToken = route.query.token;
 
-        // 1. Сохраняем токен в куки
         token.value = authToken;
 
-        // 2. Сразу же подгружаем данные пользователя, передавая токен напрямую
         const { fetchUser } = useAuth();
         await fetchUser(authToken);
 
-        // 3. Небольшая задержка, чтобы состояние закрепилось (Nuxt иногда капризничает)
         await nextTick();
 
-        // 4. Переходим на главную
-        // Если navigateTo("/") всё равно не помогает, попробуй window.location.href = "/"
         await navigateTo("/");
     }
 });

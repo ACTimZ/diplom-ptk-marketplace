@@ -5,17 +5,15 @@ const config = useRuntimeConfig();
 const isModalOpen = ref(false);
 const editDescription = ref("");
 
-// Состояния для новых данных
 const newLogin = ref("");
 const newPassword = ref("");
-const showPassword = ref(false); // Состояние видимости пароля
+const showPassword = ref(false);
 const statusMsg = ref({ text: "", isError: false });
 
 const togglePassword = () => {
     showPassword.value = !showPassword.value;
 };
 
-// Универсальная функция обновления профиля
 const updateProfile = async (body) => {
     statusMsg.value = { text: "", isError: false };
     try {
@@ -60,7 +58,7 @@ const handleSetPassword = async () => {
         return;
     }
     if (await updateProfile({ password: newPassword.value })) {
-        newPassword.value = ""; // Очищаем поле после успеха
+        newPassword.value = "";
         alert("Пароль успешно установлен!");
     }
 };
@@ -68,7 +66,6 @@ const handleSetPassword = async () => {
 const yandexLink = computed(() => `${config.public.apiBase}/auth/yandex`);
 const userAvatar = computed(() => user.value?.avatarUrl || '/img/avatar.png');
 
-// Проверка: системный ли логин (начинается на id или user_)
 const isSystemLogin = computed(() => {
     return user.value?.login.startsWith('id') || user.value?.login.startsWith('user_');
 });

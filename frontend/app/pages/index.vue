@@ -2,7 +2,6 @@
 const { user, isLoggedIn, fetchUser } = useAuth();
 
 onMounted(() => {
-    // Если мы вошли, но данных почему-то нет (тот самый случай)
     if (isLoggedIn.value && !user.value) {
         fetchUser();
     }

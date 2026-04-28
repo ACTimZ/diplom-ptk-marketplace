@@ -1,7 +1,6 @@
 <script setup>
 const { user, isLoggedIn, logout } = useAuth();
 
-// Логика аватарки: приоритет у avatarUrl из БД, иначе дефолтная картинка
 const userAvatar = computed(() => {
     return user.value?.avatarUrl || '/img/avatar.png';
 });

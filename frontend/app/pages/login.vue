@@ -1,9 +1,8 @@
 <script setup>
-// Импортируем необходимые хуки (на случай, если авто-импорт не сработал)
 import { ref, reactive, onMounted } from 'vue';
 
 const { login } = useAuth();
-const config = useRuntimeConfig(); // ОБЯЗАТЕЛЬНО: без этого config в шаблоне вызовет ошибку
+const config = useRuntimeConfig();
 const route = useRoute();
 
 const form = reactive({
@@ -22,25 +21,19 @@ const handleSubmit = async () => {
     }
 };
 
-// Обработка токена от Яндекса
 onMounted(async () => {
     const route = useRoute();
     if (route.query.token) {
         const token = useCookie("auth_token");
         const authToken = route.query.token;
 
-        // 1. Сохраняем токен в куки
         token.value = authToken;
 
-        // 2. Сразу же подгружаем данные пользователя, передавая токен напрямую
         const { fetchUser } = useAuth();
         await fetchUser(authToken);
 
-        // 3. Небольшая задержка, чтобы состояние закрепилось (Nuxt иногда капризничает)
         await nextTick();
 
-        // 4. Переходим на главную
-        // Если navigateTo("/") всё равно не помогает, попробуй window.location.href = "/"
         await navigateTo("/");
     }
 });

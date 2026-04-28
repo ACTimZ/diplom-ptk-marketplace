@@ -29,13 +29,37 @@ export class AuthController {
   @Get('yandex-auth')
   @UseGuards(AuthGuard('yandex'))
   async yandexAuthCallback(@Req() req, @Res() res: Response) {
-    // req.user здесь — это тот пользователь, которого вернул validateYandexUser
-    const { access_token } = await this.authService.generateToken(
-      req.user.id,
-      req.user.email,
+    // 1. Пытаемся понять, был ли пользователь авторизован ДО клика по кнопке
+    // Мы можем передать JWT через куки, которые Nest увидит в req.cookies
+    const cookies = req.headers.cookie?.split('; ').reduce((acc, v) => {
+      const [name, value] = v.split('=');
+      acc[name] = value;
+      return acc;
+    }, {});
+
+    const token = cookies?.['auth_token'];
+    let currentUser = null;
+
+    if (token) {
+      try {
+        // Расшифровываем токен вручную, чтобы достать userId
+        currentUser = this.authService.verifyToken(token);
+      } catch (e) {
+        currentUser = null;
+      }
+    }
+
+    // 2. Вызываем валидацию, передавая текущего юзера для "склейки"
+    const user = await this.authService.validateYandexUser(
+      req.user,
+      currentUser,
     );
 
-    // Редиректим на фронтенд (Nuxt) и передаем токен параметром
+    const { access_token } = await this.authService.generateToken(
+      user.id,
+      user.email,
+    );
+
     return res.redirect(`http://localhost:3001/login?token=${access_token}`);
   }
 }

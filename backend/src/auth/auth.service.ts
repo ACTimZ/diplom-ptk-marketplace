@@ -66,37 +66,103 @@ export class AuthService {
     };
   }
 
-  // src/auth/auth.service.ts
+  verifyToken(token: string) {
+    try {
+      return this.jwtService.verify(token, {
+        secret: process.env.JWT_SECRET,
+      });
+    } catch (e) {
+      return null;
+    }
+  }
 
-  async validateYandexUser(details: any) {
-    // 1. Ищем, есть ли такой человек
-    let user = await this.usersService.findByYandexOrEmail(
-      details.yandexId,
-      details.email,
-    );
+  // До (если при данном коде попробовать привязать яндексid, который уже привязан к другому аккаунту - выпадет ошибка 500):
+  async validateYandexUser(yandexData: any, currentUser?: any) {
+    if (currentUser && currentUser.sub) {
+      const userId = currentUser.sub;
 
-    if (user) {
-      // 2. Если пользователь есть, но зашел через Яндекс впервые — привязываем ID
-      if (!user.yandexId) {
-        user = await this.usersService.updateYandexId(
-          user.id,
-          details.yandexId,
-          details.avatarUrl,
-        );
-      }
-      return user;
+      return this.usersService.update(userId, {
+        yandexId: yandexData.yandexId,
+        avatarUrl: yandexData.avatarUrl,
+        email: yandexData.email,
+      });
     }
 
-    // 3. Если пользователя нет — создаем (авторегистрация)
-    // Для пароля при OAuth-регистрации оставляем null (в схеме passwordHash String? — это позволяет)
-    return this.usersService.create({
-      email: details.email,
-      login: `user_${details.yandexId}`, // Генерируем уникальный логин
-      name: details.name,
-      yandexId: details.yandexId,
-      avatarUrl: details.avatarUrl,
-      role: { connect: { id: 1 } },
-      status: { connect: { id: 1 } },
-    });
+    let user = await this.usersService.findByYandexId(yandexData.yandexId);
+
+    if (!user) {
+      user = await this.usersService.findByEmail(yandexData.email);
+      if (user) {
+        user = await this.usersService.update(user.id, {
+          yandexId: yandexData.yandexId,
+          avatarUrl: yandexData.avatarUrl,
+        });
+      }
+    }
+
+    if (!user) {
+      user = await this.usersService.create({
+        email: yandexData.email,
+        name: yandexData.name,
+        yandexId: yandexData.yandexId,
+        avatarUrl: yandexData.avatarUrl,
+        login: `user_${yandexData.yandexId}`,
+        role: { connect: { id: 1 } },
+        status: { connect: { id: 1 } },
+      });
+    }
+
+    return user;
   }
+
+  // После (если пользователь попробует привязать яндексid и он окажется уже привязан к какому-то аккаунту, то пользователь переавторизуется под тем аккаунтом, к которому привязан яндексid):
+  // verifyToken(token: string) {
+  //   try {
+  //     return this.jwtService.verify(token, {
+  //       secret: process.env.JWT_SECRET, // Убедись, что секрет совпадает с тем, что в модуле
+  //     });
+  //   } catch (e) {
+  //     return null;
+  //   }
+  // }
+
+  // async validateYandexUser(yandexData: any, currentUser: any) {
+  //   const { id: yandexId, email, name, avatarUrl } = yandexData;
+
+  //   let user = await this.usersService.findByYandexId(String(yandexId));
+
+  //   if (user) {
+  //     return user;
+  //   }
+
+  //   user = await this.usersService.findByEmail(email);
+
+  //   if (user) {
+  //     return this.usersService.update(user.id, {
+  //       yandexId: String(yandexId),
+  //       avatarUrl: user.avatarUrl || avatarUrl,
+  //     });
+  //   }
+
+  //   if (currentUser && currentUser.id) {
+  //     return this.usersService.update(currentUser.id, {
+  //       yandexId: String(yandexId),
+  //     });
+  //   }
+
+  //   return this.usersService.create({
+  //     email,
+  //     yandexId: String(yandexId),
+  //     name,
+  //     avatarUrl,
+  //     login: `id${yandexId}`,
+  //     passwordHash: '',
+  //     role: {
+  //       connect: { id: 1 },
+  //     },
+  //     status: {
+  //       connect: { id: 1 },
+  //     },
+  //   });
+  // }
 }

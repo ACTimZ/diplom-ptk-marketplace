@@ -61,8 +61,8 @@ export const useAuth = () => {
   return {
     user,
     token,
-    // login,
-    // register,
+    login,
+    register,
     fetchUser,
     logout,
     isLoggedIn: computed(() => !!token.value),
